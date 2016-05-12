@@ -1,4 +1,4 @@
 **/target
 .idea
 *.iml
-**/nifi-example-string-split-processors/src/main/resources
+**/nifi-string-split-processors/src/main/resources
