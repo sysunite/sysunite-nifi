@@ -1,0 +1,4 @@
+**/target
+.idea
+*.iml
+**/nifi-xmlsplit-processors/src/main/resources
