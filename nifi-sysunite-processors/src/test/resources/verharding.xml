@@ -1,0 +1,11 @@
+<FunctionalPhysicalObject name="HMV_1000" createdBy="Semmtech" createdOn="2013-10-30 15:43:13.209" id="fbcac694-7141-e311-9da6-001ec9ff8720">
+    <BeginOfLife value="2013-12-21"/>
+    <EndOfLife value="2037-12-22"/>
+    <PMScode value="HMV_1000"/>
+    <HasAsSubject noattr="true">
+        <Geometry id="8af5481e-a285-e211-a3a8-b8ac6f902f00"/>
+    </HasAsSubject>
+    <IsMaterializedBy noattr="true">
+        <MaterializedPhysicalObject id="26cbc694-7141-e311-9da6-001ec9ff8720"/>
+    </IsMaterializedBy>
+</FunctionalPhysicalObject>

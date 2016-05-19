@@ -1,0 +1,14 @@
+<FunctionalPhysicalObject createdBy="Semmtech" createdOn="2013-02-11 12:59:09.744" id="816ee370-4274-e211-a3a8-b8ac6f902f00" name="(AB CT1-N-06) Snelle doorsteek A10">
+<BeginOfLife value="2013-12-21"/>
+<EndOfLife value="2037-12-22"/>
+<PMScode value="ABCT1N06"/>
+<HasAsSubject noattr="true">
+    <Geometry id="1dd04e18-a285-e211-a3a8-b8ac6f902f00"/>
+</HasAsSubject>
+<IsMaterializedBy noattr="true">
+    <MaterializedPhysicalObject id="e0674899-adf2-e211-8930-001ec9ff8720"/>
+</IsMaterializedBy>
+<HasAsSubject noattr="true">
+    <Geometry id="493a382a-a285-e211-a3a8-b8ac6f902f00"/>
+</HasAsSubject>
+</FunctionalPhysicalObject>
