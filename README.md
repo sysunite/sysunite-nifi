@@ -21,7 +21,7 @@ You can connect a new component with relation 'firt_part'. Input for this compon
 ## XmlSplit
 This processor uses Jcabi-parser to read an XML-file and depending of value the dynamic attributes defined by the user, there are a few options.
 1. If the value of the dynamic attribute has an intention to find an attribute of an xml-node, i.e. '/Node/@id' then that result of that match,
-will be saved as value of a flowfile attribute, which is put on the original flowfile. Original flowfile contents will not change.
+will be saved as value of a flowfile attribute, which is put on the original flowfile. The attribute can later be retrieved by the dynamic property name. Original flowfile contents will not change.
 2. If the value of the dynamic attribute has an intention to find a node (or child node), i.e. '/Node/childNode', then that node is extracted
 and the original flowfile contents will be replaced for this result.
 In both cases, the result will be send to a relation that equals the dynamic property name it belongs too.
