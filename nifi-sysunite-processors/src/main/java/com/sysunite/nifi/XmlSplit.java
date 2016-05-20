@@ -113,6 +113,11 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
         //dynamicPropertyValues.put(descriptor, newValue);
       }
 
+      if(newValue == null){  //property removal!
+        newDynamicPropertyNames.remove(descriptor.getName());
+        //System.out.println("property removed!");
+      }
+
       //TODO: what are we going to do with changed values from dynamic attributes?
 
       this.dynamicPropertyNames = Collections.unmodifiableSet(newDynamicPropertyNames);

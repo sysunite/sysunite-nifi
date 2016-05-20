@@ -18,6 +18,7 @@ package com.sysunite.nifi;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -70,6 +71,9 @@ public class XmlSplitTest {
             testRunner.setProperty("HasAsSubject", "/FunctionalPhysicalObject/HasAsSubject");
             //testRunner.setProperty("IsMaterializedBy", "/FunctionalPhysicalObject/IsMaterializedBy");
 
+
+            testRunner.removeProperty(new PropertyDescriptor.Builder().name("HasAsSubject").build());
+
             // Add the content to the runner
             testRunner.enqueue(f);
 
@@ -107,6 +111,7 @@ public class XmlSplitTest {
 //            System.out.println("-----------");
 //            System.out.println(xmlValue2);
 
+            //if(testRunner.getProcessContext().getAvailableRelationships().contains(new PropertyDescriptor.Builder().name("HasAsSubject").build()
             List<MockFlowFile> results2 = testRunner.getFlowFilesForRelationship("HasAsSubject");
 
             for(MockFlowFile mockf : results2) {
