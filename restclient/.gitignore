@@ -1,4 +1,0 @@
-**/target
-.idea
-*.iml
-**/nifi-restclient-processors/src/main/resources
