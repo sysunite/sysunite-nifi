@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-@InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
+@DynamicProperty(name = "Relationship Name", value = "Index of splitted line", supportsExpressionLanguage = false, description = "")
 public class RouteTextBySplitIndex extends AbstractProcessor {
 
   public static final Relationship ORIGINAL = new Relationship.Builder()
