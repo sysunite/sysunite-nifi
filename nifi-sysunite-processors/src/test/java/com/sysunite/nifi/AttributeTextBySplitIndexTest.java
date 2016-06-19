@@ -73,24 +73,4 @@ public class AttributeTextBySplitIndexTest {
     // Run the queued content, it also takes an int = number of contents queued
     testRunner.run();
   }
-  
-  
-  @Test(expected = AssertionError.class)
-  public void testIndexTooHighFailure() {
-    ProcessSession session = testRunner.getProcessSessionFactory().createSession();
-
-    // Create flowFile with content
-    FlowFile flowFile = session.create();
-    flowFile = session.importFrom(new ByteArrayInputStream("A B C D".getBytes()), flowFile);
-
-    // Set properties
-    testRunner.setProperty(RouteTextBySplitIndex.PATTERN, " ");
-    testRunner.setProperty("tooHigh", "5");
-
-    // Add the flowfile to the runner
-    testRunner.enqueue(flowFile);
-    
-    // Run the queued content, it also takes an int = number of contents queued
-    testRunner.run();
-  }
 }

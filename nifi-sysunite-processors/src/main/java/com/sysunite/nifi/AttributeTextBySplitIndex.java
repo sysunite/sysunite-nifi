@@ -156,7 +156,8 @@ public class AttributeTextBySplitIndex extends AbstractProcessor {
       int index = Integer.valueOf(propertyValue.getValue());
 
       if(index >= splitted.length){
-        throw new ProcessException("Attribute " + name + " needs an index higher than the splitted line");
+        getLogger().warn("Attribute " + name + " needs an index higher than the splitted line");
+        continue;
       }
 
       // Set attribute
