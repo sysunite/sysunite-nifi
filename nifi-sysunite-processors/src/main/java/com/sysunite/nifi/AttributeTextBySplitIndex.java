@@ -157,11 +157,12 @@ public class AttributeTextBySplitIndex extends AbstractProcessor {
 
       if(index >= splitted.length){
         getLogger().warn("Attribute " + name + " needs an index higher than the splitted line");
-        continue;
+        flowFile = session.putAttribute(flowFile, name, ""); // TODO: should it allow for null?
       }
-
-      // Set attribute
-      flowFile = session.putAttribute(flowFile, name, splitted[index]);
+      else {
+        // Set attribute
+        flowFile = session.putAttribute(flowFile, name, splitted[index]);
+      }
     }
 
     session.transfer(flowFile, ORIGINAL);
