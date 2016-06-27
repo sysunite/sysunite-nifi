@@ -88,7 +88,7 @@ public class RouteTextBySplitIndex extends AbstractProcessor {
   
 
   @Override
-  public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue){
+  public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
     if(descriptor.isDynamic()){
       
       final Set<String> newDynamicPropertyNames = new HashSet<>(dynamicPropertyNames);

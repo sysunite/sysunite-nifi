@@ -49,6 +49,26 @@
             <artifactId>jcabi-xml</artifactId>
             <version>0.17.2</version>
         </dependency>
+
+      <!-- Apache Jena -->
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>apache-jena-libs</artifactId>
+        <type>pom</type>
+        <version>2.10.1</version>
+      </dependency>
+
+      <!-- Virtuoso -->
+      <dependency>
+        <groupId>com.openlinksw.virtuoso</groupId>
+        <artifactId>virt-jena-master</artifactId>
+        <version>2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.openlinksw.virtuoso</groupId>
+        <artifactId>virtjdbc4</artifactId>
+        <version>4.0</version>
+      </dependency>
     </dependencies>
 
 
