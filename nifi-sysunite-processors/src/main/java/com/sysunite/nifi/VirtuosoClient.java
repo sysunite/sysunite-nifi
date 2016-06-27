@@ -31,11 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 public class VirtuosoClient extends AbstractProcessor {
 
-  public static final Relationship ORIGINAL = new Relationship.Builder()
-    .name("original")
-    .description("Input for this processor will be transferred to this relationship.")
-    .build();
-
   public static final PropertyDescriptor ADDRESS = new PropertyDescriptor
     .Builder().name("address")
     .description("The Virtuoso server address 'ip:port'")
@@ -172,7 +167,6 @@ public class VirtuosoClient extends AbstractProcessor {
 
     final Set<Relationship> relationships = new HashSet<>();
     relationships.add(SUCCESS);
-    relationships.add(ORIGINAL);
     this.relationships = new AtomicReference<>(relationships);
 
     // For dynamic properties
