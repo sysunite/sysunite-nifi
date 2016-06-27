@@ -31,6 +31,11 @@ import java.util.concurrent.atomic.AtomicReference;
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 public class VirtuosoClient extends AbstractProcessor {
 
+  public static final Relationship ORIGINAL = new Relationship.Builder()
+    .name("original")
+    .description("Input for this processor will be transferred to this relationship.")
+    .build();
+
   public static final PropertyDescriptor ADDRESS = new PropertyDescriptor
     .Builder().name("address")
     .description("The Virtuoso server address 'ip:port'")
@@ -86,6 +91,8 @@ public class VirtuosoClient extends AbstractProcessor {
   private volatile Set<String> dynamicPropertyNames;
   private Map<Relationship, PropertyValue> propertyMap;
 
+  private Virtuoso quadStore;
+
   // url -> prefix (yeah, that's reversed logic)
   private Map<String, String> prefixMap = new HashMap<>();
 
@@ -104,7 +111,7 @@ public class VirtuosoClient extends AbstractProcessor {
 
   @Override
   public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
-    if(descriptor.isDynamic()){
+    if(descriptor.isDynamic()) {
 
       final Set<String> newDynamicPropertyNames = new HashSet<>(dynamicPropertyNames);
 
@@ -139,12 +146,20 @@ public class VirtuosoClient extends AbstractProcessor {
         propertyMap.put(new Relationship.Builder().name(descriptor.getName()).build(), context.getProperty(descriptor));
       }
     }
+
+    String address = context.getProperty(ADDRESS).getValue();
+    String username = context.getProperty(USER).getValue();
+    String password = context.getProperty(PASSWORD).getValue();
+
+    quadStore = new Virtuoso("jdbc:virtuoso://"+address, username, password);
   }
 
 
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
+
+    logger = context.getLogger();
 
     final List<PropertyDescriptor> descriptors = new ArrayList<>();
     descriptors.add(ADDRESS);
@@ -157,6 +172,7 @@ public class VirtuosoClient extends AbstractProcessor {
 
     final Set<Relationship> relationships = new HashSet<>();
     relationships.add(SUCCESS);
+    relationships.add(ORIGINAL);
     this.relationships = new AtomicReference<>(relationships);
 
     // For dynamic properties
@@ -191,12 +207,6 @@ public class VirtuosoClient extends AbstractProcessor {
 
 
     String separator = context.getProperty(SEPARATOR).getValue();
-
-    String address = context.getProperty(ADDRESS).getValue();
-    String username = context.getProperty(USER).getValue();
-    String password = context.getProperty(PASSWORD).getValue();
-
-    Virtuoso quadStore = new Virtuoso("jdbc:virtuoso://"+address, username, password);
 
     for (final Map.Entry<Relationship, PropertyValue> dynamicProperty : propertyMap.entrySet()) {
       final String prefix = dynamicProperty.getKey().toString();
