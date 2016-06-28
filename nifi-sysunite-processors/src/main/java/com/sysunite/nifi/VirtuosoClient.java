@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-@InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 public class VirtuosoClient extends AbstractProcessor {
 
   public static final PropertyDescriptor ADDRESS = new PropertyDescriptor
