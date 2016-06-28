@@ -84,12 +84,12 @@ public class VirtuosoClient extends AbstractProcessor {
   private AtomicReference<Set<Relationship>> relationships;
 
   private volatile Set<String> dynamicPropertyNames;
-  private Map<Relationship, PropertyValue> propertyMap;
+  private Map<Relationship, PropertyValue> dynamicProperties;
 
   private Virtuoso quadStore;
 
   // url -> prefix (yeah, that's reversed logic)
-  private Map<String, String> prefixMap = new HashMap<>();
+  private Map<String, String> prefixMap;
 
   private ProcessorLog logger;
 
@@ -136,7 +136,7 @@ public class VirtuosoClient extends AbstractProcessor {
   public void onScheduled(final ProcessContext context) {
     for (final PropertyDescriptor descriptor : context.getProperties().keySet()) {
       if (descriptor.isDynamic()) {
-        propertyMap.put(new Relationship.Builder().name(descriptor.getName()).build(), context.getProperty(descriptor));
+        dynamicProperties.put(new Relationship.Builder().name(descriptor.getName()).build(), context.getProperty(descriptor));
       }
     }
 
@@ -146,7 +146,6 @@ public class VirtuosoClient extends AbstractProcessor {
 
     quadStore = new Virtuoso("jdbc:virtuoso://"+address, username, password);
   }
-
 
 
   @Override
@@ -169,7 +168,7 @@ public class VirtuosoClient extends AbstractProcessor {
 
     // For dynamic properties
     this.dynamicPropertyNames = new HashSet<>();
-    this.propertyMap = new HashMap<>();
+    this.dynamicProperties = new HashMap<>();
   }
 
   @Override
@@ -186,27 +185,25 @@ public class VirtuosoClient extends AbstractProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
-    String select = context.getProperty(SELECT).getValue();
-    ArrayList<String> selectVars = new ArrayList<>();
-    Collections.addAll(selectVars, select.split(","));
-
-    String query = "sparql\n";
-    for(String uri : prefixMap.keySet()) {
-      query += "PREFIX "+prefixMap.get(uri)+" : <"+uri+">\n";
-    }
-    query += context.getProperty(QUERY).getValue();
-
-
-    String separator = context.getProperty(SEPARATOR).getValue();
-
-    for (final Map.Entry<Relationship, PropertyValue> dynamicProperty : propertyMap.entrySet()) {
+    prefixMap = new HashMap<>();
+    for (final Map.Entry<Relationship, PropertyValue> dynamicProperty : dynamicProperties.entrySet()) {
       final String prefix = dynamicProperty.getKey().toString();
       final String uri = dynamicProperty.getValue().toString();
 
       prefixMap.put(uri, prefix);
     }
 
+    String select = context.getProperty(SELECT).getValue();
+    ArrayList<String> selectVars = new ArrayList<>();
+    Collections.addAll(selectVars, select.split(","));
 
+    String query = "sparql\n";
+    for(String uri : prefixMap.keySet()) {
+      query += "PREFIX "+prefixMap.get(uri)+": <"+uri+">\n";
+    }
+    query += context.getProperty(QUERY).getValue();
+
+    String separator = context.getProperty(SEPARATOR).getValue();
 
     Statement stmt = ISQLChannel.executeQuery(quadStore.getVirtGraph(), query);
     try {
