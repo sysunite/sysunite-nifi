@@ -30,8 +30,9 @@ public class Virtuoso {
     return virtGraph;
   }
 
-
-
-
-
+  public void close() {
+    if(virtGraph != null) {
+      virtGraph.close();
+    }
+  }
 }

@@ -139,12 +139,6 @@ public class VirtuosoClient extends AbstractProcessor {
         dynamicProperties.put(new Relationship.Builder().name(descriptor.getName()).build(), context.getProperty(descriptor));
       }
     }
-
-    String address = context.getProperty(ADDRESS).getValue();
-    String username = context.getProperty(USER).getValue();
-    String password = context.getProperty(PASSWORD).getValue();
-
-    quadStore = new Virtuoso("jdbc:virtuoso://"+address, username, password);
   }
 
 
@@ -184,6 +178,14 @@ public class VirtuosoClient extends AbstractProcessor {
 
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+
+    // Open a connection each time
+    String address = context.getProperty(ADDRESS).getValue();
+    String username = context.getProperty(USER).getValue();
+    String password = context.getProperty(PASSWORD).getValue();
+
+    quadStore = new Virtuoso("jdbc:virtuoso://"+address, username, password);
+
 
     prefixMap = new HashMap<>();
     for (final Map.Entry<Relationship, PropertyValue> dynamicProperty : dynamicProperties.entrySet()) {
@@ -250,6 +252,9 @@ public class VirtuosoClient extends AbstractProcessor {
         logger.error(e.getMessage(), e);
       }
     }
+
+    // Close this to free connection pool for other processors
+    quadStore.close();
   }
 
 
