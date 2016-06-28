@@ -188,16 +188,15 @@ public class VirtuosoClient extends AbstractProcessor {
   @Override
   public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
-
-
-
     String select = context.getProperty(SELECT).getValue();
     ArrayList<String> selectVars = new ArrayList<>();
     Collections.addAll(selectVars, select.split(","));
 
-
-
-    String query = "sparql\n" + context.getProperty(QUERY).getValue();
+    String query = "sparql\n";
+    for(String uri : prefixMap.keySet()) {
+      query += "PREFIX "+prefixMap.get(uri)+" : <"+uri+">\n";
+    }
+    query += context.getProperty(QUERY).getValue();
 
 
     String separator = context.getProperty(SEPARATOR).getValue();
