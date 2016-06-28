@@ -16,6 +16,7 @@ import virtuoso.jena.driver.ISQLChannel;
 import virtuoso.jena.driver.Virtuoso;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,6 +30,16 @@ import java.util.concurrent.atomic.AtomicReference;
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 public class VirtuosoClient extends AbstractProcessor {
+
+  public static final Relationship RESULT_ROW = new Relationship.Builder()
+    .name("result row")
+    .description("All the found result rows are sent over this link (one by one).")
+    .build();
+
+  public static final Relationship ORIGINAL = new Relationship.Builder()
+    .name("original")
+    .description("Input for this processor will be transferred to this relationship.")
+    .build();
 
   public static final PropertyDescriptor ADDRESS = new PropertyDescriptor
     .Builder().name("address")
@@ -74,10 +85,7 @@ public class VirtuosoClient extends AbstractProcessor {
     .build();
 
 
-  public static final Relationship SUCCESS = new Relationship.Builder()
-    .name("success")
-    .description("Relationship to transfer data to.")
-    .build();
+
 
   private List<PropertyDescriptor> descriptors;
 
@@ -121,14 +129,6 @@ public class VirtuosoClient extends AbstractProcessor {
       }
 
       this.dynamicPropertyNames = Collections.unmodifiableSet(newDynamicPropertyNames);
-
-      // Build new relationships
-      final Set<Relationship> newRelationships = new HashSet<>();
-
-
-      newRelationships.add(SUCCESS);
-
-      this.relationships.set(newRelationships);
     }
   }
 
@@ -157,7 +157,8 @@ public class VirtuosoClient extends AbstractProcessor {
     this.descriptors = Collections.unmodifiableList(descriptors);
 
     final Set<Relationship> relationships = new HashSet<>();
-    relationships.add(SUCCESS);
+    relationships.add(RESULT_ROW);
+    relationships.add(ORIGINAL);
     this.relationships = new AtomicReference<>(relationships);
 
     // For dynamic properties
@@ -203,16 +204,24 @@ public class VirtuosoClient extends AbstractProcessor {
     for(String uri : prefixMap.keySet()) {
       query += "PREFIX "+prefixMap.get(uri)+": <"+uri+">\n";
     }
-    query += context.getProperty(QUERY).evaluateAttributeExpressions().getValue();
+
+    FlowFile oldFlowFile = session.get();
+
+    if (oldFlowFile != null) {
+      query += context.getProperty(QUERY).evaluateAttributeExpressions(oldFlowFile).getValue();
+    } else {
+      query += context.getProperty(QUERY).evaluateAttributeExpressions().getValue();
+    }
 
     String separator = context.getProperty(SEPARATOR).getValue();
 
-    Statement stmt = ISQLChannel.executeQuery(quadStore.getVirtGraph(), query);
+    Statement stmt = null;
     try {
+      stmt = ISQLChannel.executeQuery(quadStore.getVirtGraph(), query);
       ResultSet result = stmt.executeQuery(query);
 
       while(result.next()) {
-        String flowFileRow = null;
+        String resultRow = null;
         for(String selectVar : selectVars) {
           String value = result.getString(selectVar);
           for(String uri : prefixMap.keySet()) {
@@ -223,31 +232,43 @@ public class VirtuosoClient extends AbstractProcessor {
           if(value != null) {
 
             // Begin condition
-            if(flowFileRow == null) {
-              flowFileRow = value;
+            if(resultRow == null) {
+              resultRow = value;
             }
             // For each column after the first
             else {
-              flowFileRow += separator + value;
+              resultRow += separator + value;
             }
           } else {
             logger.error("Wrong select!");
           }
         }
 
-        FlowFile flowfile = session.create();
-        flowfile = session.importFrom(new ByteArrayInputStream(flowFileRow.getBytes(StandardCharsets.UTF_8)), flowfile);
-        session.transfer(flowfile, SUCCESS);
+
+        InputStream in = new ByteArrayInputStream(resultRow.getBytes(StandardCharsets.UTF_8));
+        FlowFile newFlowFile;
+        if(oldFlowFile != null) {
+          newFlowFile = session.create(oldFlowFile);
+        } else {
+          newFlowFile = session.create();
+        }
+
+
+        newFlowFile = session.importFrom(in, newFlowFile);
+        session.transfer(newFlowFile, RESULT_ROW);
 
       }
     } catch (SQLException e) {
+      logger.error(query);
       logger.error(e.getMessage(), e);
     }
     finally {
 
       try {
-        stmt.cancel();
-        stmt.close();
+        if(stmt != null) {
+          stmt.cancel();
+          stmt.close();
+        }
       } catch (SQLException e) {
         logger.error(e.getMessage(), e);
       }
@@ -255,6 +276,10 @@ public class VirtuosoClient extends AbstractProcessor {
 
     // Close this to free connection pool for other processors
     quadStore.close();
+
+    if(oldFlowFile != null) {
+      session.transfer(oldFlowFile, ORIGINAL);
+    }
   }
 
 

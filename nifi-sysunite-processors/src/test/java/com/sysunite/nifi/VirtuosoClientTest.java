@@ -41,7 +41,32 @@ public class VirtuosoClientTest {
   }
 
   @Test
-  public void testOnTrigger() throws IOException {
+  public void withoutFlowFile() throws IOException {
+
+    // Content to be mock a json file
+    InputStream content = new ByteArrayInputStream("".getBytes());
+
+    // Add properties
+    testRunner.setProperty(VirtuosoClient.ADDRESS, TestConfig.getVirtuosoAddress());
+    testRunner.setProperty(VirtuosoClient.USER, TestConfig.getVirtuosoUser());
+    testRunner.setProperty(VirtuosoClient.PASSWORD, TestConfig.getVirtuosoPassword());
+    testRunner.setProperty(VirtuosoClient.SELECT, "s,p,o");
+    testRunner.setProperty(VirtuosoClient.SEPARATOR, "\t");
+    testRunner.setProperty(VirtuosoClient.QUERY, "SELECT ?s ?p ?o WHERE {?s ?p ?o}");
+
+    testRunner.setProperty("ba", "http://ba#");
+
+    // Run the enqueued content, it also takes an int = number of contents queued
+    testRunner.run();
+
+    // If you need to read or do additional tests on results you can access the content
+    List<MockFlowFile> results = testRunner.getFlowFilesForRelationship(VirtuosoClient.RESULT_ROW);
+    assert(IOUtils.toString(testRunner.getContentAsByteArray(results.get(0))).equals("ba:a\tb\tdev"));
+    assert(IOUtils.toString(testRunner.getContentAsByteArray(results.get(1))).equals("c\td\te"));
+  }
+
+  @Test
+  public void withFlowFile() throws IOException {
 
     // Content to be mock a json file
     InputStream content = new ByteArrayInputStream("".getBytes());
@@ -63,7 +88,7 @@ public class VirtuosoClientTest {
     testRunner.run();
 
     // If you need to read or do additional tests on results you can access the content
-    List<MockFlowFile> results = testRunner.getFlowFilesForRelationship(RestClient.SUCCESS);
+    List<MockFlowFile> results = testRunner.getFlowFilesForRelationship(VirtuosoClient.RESULT_ROW);
     assert(IOUtils.toString(testRunner.getContentAsByteArray(results.get(0))).equals("ba:a\tb\tdev"));
     assert(IOUtils.toString(testRunner.getContentAsByteArray(results.get(1))).equals("c\td\te"));
   }
