@@ -67,9 +67,10 @@ public class VirtuosoClient extends AbstractProcessor {
 
   public static final PropertyDescriptor QUERY = new PropertyDescriptor
     .Builder().name("query")
-    .description("The SPARQL query.")
+    .description("The SPARQL query (nifi expressions supported).")
     .required(true)
     .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .expressionLanguageSupported(true)
     .build();
 
 
@@ -202,7 +203,7 @@ public class VirtuosoClient extends AbstractProcessor {
     for(String uri : prefixMap.keySet()) {
       query += "PREFIX "+prefixMap.get(uri)+": <"+uri+">\n";
     }
-    query += context.getProperty(QUERY).getValue();
+    query += context.getProperty(QUERY).evaluateAttributeExpressions().getValue();
 
     String separator = context.getProperty(SEPARATOR).getValue();
 
