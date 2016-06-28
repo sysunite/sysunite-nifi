@@ -124,9 +124,7 @@ public class VirtuosoClient extends AbstractProcessor {
 
       // Build new relationships
       final Set<Relationship> newRelationships = new HashSet<>();
-      for (final String propName : dynamicPropertyNames) {
-        newRelationships.add(new Relationship.Builder().name(propName).build());
-      }
+
 
       newRelationships.add(SUCCESS);
 
