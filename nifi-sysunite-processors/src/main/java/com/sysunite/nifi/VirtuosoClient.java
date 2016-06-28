@@ -197,7 +197,7 @@ public class VirtuosoClient extends AbstractProcessor {
 
 
 
-    String query = "sparql\n" + context.getProperty(QUERY).getValue()+" LIMIT 100";
+    String query = "sparql\n" + context.getProperty(QUERY).getValue();
 
 
     String separator = context.getProperty(SEPARATOR).getValue();
