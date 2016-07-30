@@ -18,10 +18,8 @@ package com.sysunite.nifi;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
@@ -31,7 +29,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 
 public class XmlSplitTest {
@@ -49,7 +46,6 @@ public class XmlSplitTest {
     try {
 
 
-      //import a xml file and simulate it as a flowfile earlier used with some attributes.
       String file = "slagboom.xml";
       byte[] contents = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(file).getFile()));
       InputStream in = new ByteArrayInputStream(contents);
@@ -60,16 +56,12 @@ public class XmlSplitTest {
       f = processSession.putAttribute(f, "RandomId", "123");
 
 
-      // Add properites
-      // Add properites
-      //testRunner.setProperty("FunctionalPhysicalObject-id", "/FunctionalPhysicalObject/@id");
-      //testRunner.setProperty("BeginOfLife-id", "/FunctionalPhysicalObject/BeginOfLife/@value");
 
-      testRunner.setProperty("HasAsSubject", "/FunctionalPhysicalObject/HasAsSubject");
-      //testRunner.setProperty("IsMaterializedBy", "/FunctionalPhysicalObject/IsMaterializedBy");
+      testRunner.setProperty("AfsluitboomXML", "//OBS_ProtoType");
 
 
-      testRunner.removeProperty(new PropertyDescriptor.Builder().name("HasAsSubject").build());
+
+
 
       // Add the content to the runner
       testRunner.enqueue(f);
@@ -77,54 +69,10 @@ public class XmlSplitTest {
       // Run the enqueued content, it also takes an int = number of contents queued
       testRunner.run();
 
-//            //get contents for original relationship
-//            List<MockFlowFile> results = testRunner.getFlowFilesForRelationship("original");
-//            assertTrue("1 match", results.size() == 1);
-//            MockFlowFile result = results.get(0);
-//            String resultValue = new String(testRunner.getContentAsByteArray(result));
-//            System.out.println(resultValue);
 
 
-//            List<MockFlowFile> results3 = testRunner.getFlowFilesForRelationship("FunctionalPhysicalObject-id");
-//            MockFlowFile result3 = results3.get(0);
-//            result3.assertAttributeExists("FunctionalPhysicalObject-id");
-//            String xmlValue3 = result3.getAttribute("FunctionalPhysicalObject-id");
-//            System.out.println("-----------");
-//            System.out.println(xmlValue3);
-//
-//            //get contents for a specific dynamic relationship
-//            List<MockFlowFile> results = testRunner.getFlowFilesForRelationship("BeginOfLife");
-//            MockFlowFile result = results.get(0);
-//            result.assertAttributeExists("BeginOfLife");
-//            String xmlValue = result.getAttribute("BeginOfLife");
-//            System.out.println("-----------");
-//            System.out.println(xmlValue);
-//
-//
-//            List<MockFlowFile> results2 = testRunner.getFlowFilesForRelationship("IsMaterializedBy");
-//            MockFlowFile result2 = results2.get(0);
-//            result2.assertAttributeExists("IsMaterializedBy");
-//            String xmlValue2 = result2.getAttribute("IsMaterializedBy");
-//            System.out.println("-----------");
-//            System.out.println(xmlValue2);
-
-      //if(testRunner.getProcessContext().getAvailableRelationships().contains(new PropertyDescriptor.Builder().name("HasAsSubject").build()
-      List<MockFlowFile> results2 = testRunner.getFlowFilesForRelationship("HasAsSubject");
-
-      for(MockFlowFile mockf : results2) {
-        //MockFlowFile result2 = results2.get(0);
-        //f.assertAttributeExists("HasAsSubject");
-        String xmlValue2 = f.getAttribute("RandomId");
-        System.out.println("-----------");
-        System.out.println(xmlValue2);
-        String resultValue = new String(testRunner.getContentAsByteArray(mockf));
-        System.out.println(resultValue);
-      }
-
-
-    }catch(IOException e){
-      System.out.println("FOUT!!");
-      System.out.println(e.getStackTrace());
+    } catch(IOException e) {
+      e.printStackTrace();
     }
   }
 

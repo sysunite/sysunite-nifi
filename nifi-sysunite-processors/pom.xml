@@ -43,13 +43,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- XML Parsing for XMLSplit -->
-    <dependency>
-      <groupId>com.jcabi</groupId>
-      <artifactId>jcabi-xml</artifactId>
-      <version>0.17.2</version>
-    </dependency>
-
     <!-- Apache Jena -->
     <dependency>
       <groupId>org.apache.jena</groupId>

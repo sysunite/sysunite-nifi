@@ -21,26 +21,40 @@
 
 package com.sysunite.nifi;
 
-import com.jcabi.xml.XML;
-import com.jcabi.xml.XMLDocument;
-import org.apache.commons.io.IOUtils;
 import org.apache.nifi.annotation.behavior.*;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.SeeAlso;
+import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.ConfigurableComponent;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.*;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.annotation.documentation.CapabilityDescription;
-import org.apache.nifi.annotation.documentation.SeeAlso;
-import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,10 +71,7 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
       .description("Input for this processor will be transfered to this relationship.")
       .build();
 
-  //user-defined properties i.e. MY_PROPERTY
   private List<PropertyDescriptor> properties;
-
-  //seperate lists for dynamic properties
   private volatile Set<String> dynamicPropertyNames = new HashSet<>();
   private Map<Relationship, PropertyValue> propertyMap = new HashMap<>();
 
@@ -68,17 +79,15 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
 
   @Override
   protected void init(final ProcessorInitializationContext context) {
-    //position 0
-    final List<PropertyDescriptor> properties = new ArrayList<>();
-    //properties.add(SPLIT);
-    this.properties = Collections.unmodifiableList(properties);
 
+    final List<PropertyDescriptor> properties = new ArrayList<>();
+    this.properties = Collections.unmodifiableList(properties);
     final Set<Relationship> set = new HashSet<>();
     set.add(ORIGINAL);
     relationships = new AtomicReference<>(set);
   }
 
-  /* method required for dynamic property */
+
   @Override
   protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
     //position 1
@@ -91,39 +100,28 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
         .build();
   }
 
-  /* method from interface ConfigurableComponent */
-  /*method required for dynamic property */
+
   @Override
   public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue){
 
-    //position 2
+
 
     if(descriptor.isDynamic()){
 
-
-      //------------first we make dynamic properties
-      //System.out.println("@onPropertyModified:: dynamic prop");
-
       final Set<String> newDynamicPropertyNames = new HashSet<>(dynamicPropertyNames);
 
-      if (oldValue == null) {    // new property
-        //System.out.println("@onPropertyModified::oldValue=NULL");
-        //newDynamicPropertyNames.addAll(this.dynamicPropertyNames);
+      if (oldValue == null) {
         newDynamicPropertyNames.add(descriptor.getName());
-        //dynamicPropertyValues.put(descriptor, newValue);
       }
 
-      if(newValue == null){  //property removal!
+      if(newValue == null) {
         newDynamicPropertyNames.remove(descriptor.getName());
-        //System.out.println("property removed!");
       }
 
       //TODO: what are we going to do with changed values from dynamic attributes?
 
       this.dynamicPropertyNames = Collections.unmodifiableSet(newDynamicPropertyNames);
 
-
-      //------------then we make relationships with the dynamic property names
       final Set<String> allDynamicProps = this.dynamicPropertyNames;
 
       final Set<Relationship> newRelationships = new HashSet<>();
@@ -132,28 +130,21 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
         newRelationships.add(new Relationship.Builder().name(propName).build());
       }
 
-      newRelationships.add(ORIGINAL); //dont forget the original
+      newRelationships.add(ORIGINAL);
 
       this.relationships.set(newRelationships);
-
     }
-
   }
 
   /* method required for dynamic property */
   @OnScheduled
   public void onScheduled(final ProcessContext context) {
-    //position 3
-
-    //System.out.println("@onScheduled");
 
     final Map<Relationship, PropertyValue> newPropertyMap = new HashMap<>();
     for (final PropertyDescriptor descriptor : context.getProperties().keySet()) {
       if (!descriptor.isDynamic()) {
         continue;
       }
-      //getLogger().debug("Adding new dynamic property: {}", new Object[]{descriptor});
-      //System.out.println("Adding new dynamic property: {}" + descriptor.toString());
       newPropertyMap.put(new Relationship.Builder().name(descriptor.getName()).build(), context.getProperty(descriptor));
     }
 
@@ -169,118 +160,109 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
       return;
     }
 
-
-    //read the flow file and save it contents
-    final AtomicReference<InputStream> theXml = new AtomicReference<>();
+    final AtomicReference<Document> theXml = new AtomicReference<>();
 
     session.read(flowFile, new InputStreamCallback() {
 
       @Override
-      public void process(InputStream isIn) throws IOException {
-
-        //System.out.println("contact!");
+      public void process(InputStream inputStream) throws IOException {
 
         try {
+          DocumentBuilderFactory builderFactory =
+              DocumentBuilderFactory.newInstance();
+          DocumentBuilder builder = null;
+          try {
+            builder = builderFactory.newDocumentBuilder();
+          } catch (ParserConfigurationException e) {
+            System.out.println("invalid xml file content");
+            e.printStackTrace();
+          }
 
-          String contents = IOUtils.toString(isIn);
+          Document xmlDocument = builder.parse(inputStream);
 
-          XML xmlNode = new XMLDocument(contents);
+          theXml.set(xmlDocument);
 
-          InputStream is = new ByteArrayInputStream(xmlNode.toString().getBytes());
 
-          theXml.set(is);
-
-        } catch(IOException e){
-          System.out.println("w00t");// + e.getMessage());
-        }catch(IllegalArgumentException e){
-          System.out.println("is xml niet geldig?");
-        }catch(IndexOutOfBoundsException e){
-          System.out.println("bah! de node waar gezocht naar moet worden is niet gevonden!");
+        } catch(SAXException e) {
+          System.out.println("invalid xml file content");
+          e.printStackTrace();
         }
-
       }
     });
 
-    //fetch the xml content again
 
-    try {
 
-      InputStream orig_xml = theXml.get();
 
-      String xml_contents = IOUtils.toString(orig_xml);
+    // loop through the relations and get each value (xpath)
+    final Map<Relationship, PropertyValue> propMap = propertyMap;
 
-      try {
+    for (final Map.Entry<Relationship, PropertyValue> entry : propMap.entrySet()) {
 
-        //loop through the relations and get each value (xpath)
-        final Map<Relationship, PropertyValue> propMap = propertyMap;
+      final PropertyValue pv = entry.getValue();
+      String xPathQuery = pv.getValue();
 
-        for (final Map.Entry<Relationship, PropertyValue> entry : propMap.entrySet()) {
+      final Relationship rel = entry.getKey();
+      String relName = rel.getName();
 
-          final PropertyValue pv = entry.getValue();
-          String xpath = pv.getValue();
+      if (xPathQuery != null) {
 
-          final Relationship rel = entry.getKey();
-          String relName = rel.getName();
 
-          if (xpath != null) {
+        XPath xPath =  XPathFactory.newInstance().newXPath();
 
-            System.out.println(xpath);
+        // if we want an attribute of a node
+        // we reconize the monkeytail in xpath i.e. /Node/@id - Route On Attribute (ori FileContent not changed)
+        if(xPathQuery.matches("(.*)\u0040(.*)")) {
 
-            //create new xml
-            XML file = new XMLDocument(xml_contents);
-
-            //if we want an attribute of a node
-            //we reconize the monkeytail in xpath i.e. /Node/@id - Route On Attribute (ori FileContent not changed)
-            if(xpath.matches("(.*)\u0040(.*)")){
-              String v = file.xpath(xpath).get(0);
-              //System.out.println(v);
-
-              FlowFile fNew = session.clone(flowFile);
-              //create attribute
-              fNew = session.putAttribute(fNew, relName, v);
-              //transfer
-              session.transfer(fNew, rel);
-
-            }else {
-
-              //extract all nodes and transfer them to the appropriate relation - Route On Content (ori FileContent changed)
-              for (XML ibr : file.nodes(xpath)) {
-
-//              System.out.println("match!");
-//              System.out.println(ibr.toString());
-
-                FlowFile fNew = session.clone(flowFile);
-                //create attribute
-                //fNew = session.putAttribute(fNew, relName, ibr.toString());
-
-                InputStream in = new ByteArrayInputStream(ibr.toString().getBytes());
-
-                fNew = session.importFrom(in, fNew);
-                //transfer
-                session.transfer(fNew, rel);
-
-              }
-
-            }
-
+          String singleStringValue;
+          try {
+            singleStringValue = xPath.compile(xPathQuery).evaluate(theXml.get());
+          } catch (XPathExpressionException e) {
+            throw new ProcessException();
           }
 
+          FlowFile fNew = session.clone(flowFile);
+          fNew = session.putAttribute(fNew, relName, singleStringValue);
+          session.transfer(fNew, rel);
+
+        } else {
+
+          NodeList nodeList;
+          try {
+            nodeList = (NodeList)xPath.compile(xPathQuery).evaluate(theXml.get(), XPathConstants.NODESET);
+          } catch (XPathExpressionException e) {
+            throw new ProcessException(e);
+          }
+
+          //extract all nodes and transfer them to the appropriate relation - Route On Content (ori FileContent changed)
+          for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            StringWriter writer = new StringWriter();
+            Transformer transformer = null;
+            try {
+              transformer = TransformerFactory.newInstance().newTransformer();
+              transformer.transform(new DOMSource(node), new StreamResult(writer));
+
+            } catch (TransformerException e) {
+              throw new ProcessException(e);
+            }
+
+
+            String xml = writer.toString();
+
+            FlowFile fNew = session.clone(flowFile);
+            InputStream in = new ByteArrayInputStream(xml.getBytes());
+            fNew = session.importFrom(in, fNew);
+            session.transfer(fNew, rel);
+          }
         }
-
-      } catch(IllegalArgumentException e){
-        System.out.println("is xml niet geldig?");
-      }catch(IndexOutOfBoundsException e){
-        System.out.println("bah! de node waar gezocht naar moet worden is niet gevonden!");
       }
-
-    }catch(IOException e){
-      System.out.println("cannot read xml");
     }
 
+
+
+
     session.transfer(flowFile, ORIGINAL);
-
   }
-
 
   @Override
   public Set<Relationship> getRelationships() {
@@ -291,6 +273,4 @@ public class XmlSplit extends AbstractProcessor implements ConfigurableComponent
   public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
     return properties;
   }
-
-
 }
