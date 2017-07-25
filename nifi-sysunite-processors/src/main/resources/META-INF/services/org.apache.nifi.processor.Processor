@@ -17,3 +17,4 @@ com.sysunite.nifi.RouteTextBySplitIndex
 com.sysunite.nifi.AttributeTextBySplitIndex
 com.sysunite.nifi.XmlSplit
 com.sysunite.nifi.VirtuosoClient
+com.sysunite.nifi.UUIDGenerator
